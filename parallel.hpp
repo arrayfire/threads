@@ -13,7 +13,7 @@ using std::array;
 using std::begin;
 using std::end;
 
-using dim_t = tuple<size_t, size_t, size_t, size_t>;
+using dim_t = array<size_t, 4>;
 
 class parallel_mat
 {
@@ -26,7 +26,6 @@ class parallel_mat
         const size_t &b    = get<DIM>(bound);
               size_t &iter = get<DIM>(iterations);
         for(;  iter < b; iter++) {
-            //std::cout << DIM << std::endl;
             work<DIM-1>(iterations);
         }
     }
@@ -36,7 +35,7 @@ public:
         : func(func)
         , bound(iterations)
     {
-        auto w = std::make_tuple<size_t, size_t, size_t, size_t>(0, 0, 0, 0);
+        auto w = array<size_t, 4>{0, 0, 0, 0};
         work<3>(w);
     }
 };
