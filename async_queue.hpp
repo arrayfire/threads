@@ -1,3 +1,5 @@
+#pragma once
+
 #include <thread>
 #include <mutex>
 #include <queue>
@@ -23,19 +25,28 @@ class async_queue {
     queue<function<void()>> work_queue;
     atomic<bool> done;
     mutex queue_mutex;
+    mutex work_mutex;
     condition_variable cond;
 
     void queue_runner() {
-        std::cout << "Starting: " << std::this_thread::get_id() << std::endl;
+        //std::cout << "Starting: " << std::this_thread::get_id() << std::endl;
         while (!done) {
-            unique_lock<mutex> lock(queue_mutex);
-            cond.wait(lock, [this]() {
-                return work_queue.empty() == false || done.load();
-            });
-            if(done) break;
-            function<void()> func = work_queue.front();
-            func();
-            work_queue.pop();
+            unique_lock<mutex> work_lock(work_mutex, std::defer_lock);
+            function<void()> func;
+            {
+                unique_lock<mutex> lock(queue_mutex);
+                cond.wait(lock, [this]() {
+                        return work_queue.empty() == false || done;
+                    });
+
+                if(done) break;
+
+                work_lock.lock();
+                swap(func, work_queue.front());
+                work_queue.pop();
+            }
+            if (!func) {printf("bad function: %zu\n", work_queue.size());}
+            else func();
         }
     }
 
@@ -45,12 +56,13 @@ public:
     /// \param func A function which will be enqueued on the work queue
     /// \param args The argument of the funciton \p func
     template <typename F, typename... Args>
-    void enqueue(F func, Args... args) {
+    void enqueue(const F func, Args... args) {
         auto no_arg_func = std::bind(func, args...);
         {
             lock_guard<mutex> lock(queue_mutex);
             work_queue.push(no_arg_func);
         }
+
         cond.notify_one();
         return;
     }
@@ -60,14 +72,17 @@ public:
     /// This function will block the calling thread until all of the queued
     /// functions have completed
     void sync() {
-        std::cout << "Syncing" << std::endl;
+        //std::cout << "Syncing" << std::endl;
         while (work_queue.empty() == false)
             std::this_thread::yield();
-        std::cout << "Done Syncing" << std::endl;
+        lock_guard<mutex> l(work_mutex);
+        //std::cout << "Done Syncing" << std::endl;
     }
 
     /// \brief Creates a new work queue
-    async_queue() : done(false) {
+    async_queue()
+        : work_queue()
+        , done(false) {
         thread tmp(&async_queue::queue_runner, this);
         swap(queue_thread, tmp);
     }
