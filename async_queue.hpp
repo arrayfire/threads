@@ -6,6 +6,7 @@
 #include <atomic>
 #include <functional>
 #include <condition_variable>
+#include <future>
 
 #include <iostream>
 
@@ -57,7 +58,7 @@ public:
     /// \param args The argument of the funciton \p func
     template <typename F, typename... Args>
     void enqueue(const F func, Args... args) {
-        auto no_arg_func = std::bind(func, args...);
+        auto no_arg_func = std::bind(func, std::forward<Args>(args)...);
         {
             lock_guard<mutex> lock(queue_mutex);
             work_queue.push(no_arg_func);
@@ -73,9 +74,13 @@ public:
     /// functions have completed
     void sync() {
         //std::cout << "Syncing" << std::endl;
-        while (work_queue.empty() == false)
-            std::this_thread::yield();
-        lock_guard<mutex> l(work_mutex);
+        std::promise<void> p;
+        std::future<void> fut = p.get_future();
+        auto f = [] (std::promise<void>& pr) {
+            pr.set_value();
+        };
+        this->enqueue(f, ref(p));
+        fut.wait();
         //std::cout << "Done Syncing" << std::endl;
     }
 
