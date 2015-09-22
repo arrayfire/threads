@@ -58,13 +58,17 @@ public:
     /// \param args The argument of the funciton \p func
     template <typename F, typename... Args>
     void enqueue(const F func, Args... args) {
-        auto no_arg_func = std::bind(func, std::forward<Args>(args)...);
-        {
-            lock_guard<mutex> lock(queue_mutex);
-            work_queue.push(no_arg_func);
-        }
+        if(std::this_thread::get_id() == queue_thread.get_id()) {
+            func(args...);
+        } else {
+            auto no_arg_func = std::bind(func, std::forward<Args>(args)...);
+            {
+                lock_guard<mutex> lock(queue_mutex);
+                work_queue.push(no_arg_func);
+            }
 
-        cond.notify_one();
+            cond.notify_one();
+        }
         return;
     }
 
