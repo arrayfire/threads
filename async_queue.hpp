@@ -72,6 +72,13 @@ public:
         return;
     }
 
+    /// \brief Check if the current thread of execution is same as the queue thread
+    ///
+    /// \return A boolean indicating if current thread is same as the queue thread
+    bool is_worker() const {
+        return std::this_thread::get_id() == queue_thread.get_id();
+    }
+
     /// \brief Blocks until all work has completed
     ///
     /// This function will block the calling thread until all of the queued
