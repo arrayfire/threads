@@ -56,20 +56,23 @@ public:
     ///
     /// \param func A function which will be enqueued on the work queue
     /// \param args The argument of the funciton \p func
+    /// \returns The number of items in the work queue. If called from the
+    ///          worker thread then 0 is returned
     template <typename F, typename... Args>
-    void enqueue(const F func, Args... args) {
-        if(std::this_thread::get_id() == queue_thread.get_id()) {
+    int enqueue(const F func, Args... args) {
+        int count = 0;
+        if(is_worker()) {
             func(args...);
         } else {
             auto no_arg_func = std::bind(func, std::forward<Args>(args)...);
             {
                 lock_guard<mutex> lock(queue_mutex);
                 work_queue.push(no_arg_func);
+                count = work_queue.size();
             }
-
             cond.notify_one();
         }
-        return;
+        return count;
     }
 
     /// \brief Check if the current thread of execution is same as the queue thread
