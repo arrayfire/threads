@@ -3,6 +3,7 @@
 #include <atomic>
 #include <thread>
 
+namespace threads {
 
 enum class EventType : int {
     //< The event has been created and can be inserted into the queue
@@ -112,3 +113,5 @@ class event {
     /// \brief Returns true if the event has been created.
     operator bool() const noexcept { return static_cast<bool>(event_status); }
 };
+
+}  // namespace threads

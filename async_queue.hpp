@@ -8,6 +8,8 @@
 #include <queue>
 #include <thread>
 
+namespace threads {
+
 class async_queue {
     std::thread queue_thread;
     std::queue<std::function<void()>> work_queue;
@@ -96,3 +98,5 @@ public:
         queue_thread.join();
     }
 };
+
+}  // namespace threads
