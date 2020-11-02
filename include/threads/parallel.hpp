@@ -1,26 +1,25 @@
+/*******************************************************
+ * Copyright (c) 2021, ArrayFire
+ * All rights reserved.
+ *
+ * This file is distributed under 3-clause BSD license.
+ * The complete license agreement can be obtained at:
+ * http://arrayfire.com/licenses/BSD-3-Clause
+ ********************************************************/
+
 #pragma once
 
 #include "async_queue.hpp"
 
-#include <thread>
-#include <functional>
 #include <numeric>
 #include <array>
 #include <vector>
 #include <cmath>
 
-using std::function;
-using std::get;
-using std::partial_sum;
-using std::array;
-using std::begin;
-using std::end;
-
-using dim_t = array<size_t, 4>;
+using dim_t = std::array<size_t, 4>;
 
 #define NTHREADS 8
 static std::vector<threads::async_queue> queues(NTHREADS);
-
 
 template<typename FUNC, size_t DIM>
 struct work;
@@ -36,6 +35,11 @@ public:
         : func(static_cast<void*>(&func))
         , bound(iterations)
     {
+        using std::array;
+        using std::begin;
+        using std::end;
+        using std::partial_sum;
+
         array<size_t, 4> w = {{0, 0, 0, 0}};
         func(w);
         //array<size_t, 4> nelems;
@@ -51,6 +55,8 @@ template<typename FUNC, size_t DIM>
 struct work {
     void operator()(const parallel_mat *ref, dim_t iterations)
     {
+        using std::get;
+
         const size_t &b    = get<DIM>(ref->getBound());
               size_t &iter = get<DIM>(iterations);
         if(DIM==3) {
@@ -73,6 +79,8 @@ template<typename FUNC>
 struct work<FUNC, 0> {
     void operator()(const parallel_mat *ref, dim_t iterations)
     {
+        using std::get;
+
         const size_t &b    = get<0>(ref->getBound());
               size_t &iter = get<0>(iterations);
         const auto f = *(static_cast<const FUNC * const>(ref->getFunc()));
