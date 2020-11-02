@@ -1,11 +1,12 @@
+#include <async_queue.hpp>
+#include <parallel.hpp>
 
-#include "async_queue.hpp"
-#include "parallel.hpp"
 #include <chrono>
+#include <iostream>
 
 using namespace std::chrono;
-
 using namespace std;
+using namespace threads;
 
 void blah(int &c, int a, int b) {
     std::cout << "starting b" << std::endl;

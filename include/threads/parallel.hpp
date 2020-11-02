@@ -19,7 +19,7 @@ using std::end;
 using dim_t = array<size_t, 4>;
 
 #define NTHREADS 8
-static std::vector<async_queue> queues(NTHREADS);
+static std::vector<threads::async_queue> queues(NTHREADS);
 
 
 template<typename FUNC, size_t DIM>
