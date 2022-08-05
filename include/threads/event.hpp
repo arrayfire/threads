@@ -103,23 +103,27 @@ class event {
 
     /// \brief Blocks the queue from progressing until the event has occurred.
     int wait(async_queue &queue) const {
-        queue.enqueue(
-            [](std::shared_ptr<std::atomic<EventType>> event_status) noexcept {
-                while (event_status->load(std::memory_order_acquire) !=
-                       EventType::COMPLETED)
+        if (event_status->load() == EventType::QUEUED) {
+            queue.enqueue(
+                [](std::shared_ptr<std::atomic<EventType>> event_status) noexcept {
+                  while (event_status->load(std::memory_order_acquire) !=
+                        EventType::COMPLETED)
                     std::this_thread::yield();
-            },
-            event_status);
+                },
+                event_status);
+        }
         return 0;
     }
 
     /// \brief Blocks the current thread from continuing until the event has occurred
     int sync() const noexcept {
-        while (event_status->load(std::memory_order_acquire) !=
-               EventType::COMPLETED)
-            std::this_thread::yield();
+        if (event_status->load() == EventType::QUEUED) {
+            while (event_status->load(std::memory_order_acquire) !=
+                  EventType::COMPLETED)
+              std::this_thread::yield();
+        }
         return 0;
-    }
+      }
 
     /// \brief Returns true if the event has been created.
     operator bool() const noexcept { return static_cast<bool>(event_status); }
